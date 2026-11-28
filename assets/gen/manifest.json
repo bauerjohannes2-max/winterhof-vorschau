@@ -1,0 +1,142 @@
+{
+  "bundles": [
+    {
+      "name": "default",
+      "assets": []
+    },
+    {
+      "name": "spiel",
+      "assets": [
+        {
+          "alias": [
+            "spiel/boden/erde.png",
+            "spiel/boden/erde",
+            "erde.png",
+            "erde"
+          ],
+          "src": [
+            "spiel/boden/erde-YKYhXw.png",
+            "spiel/boden/erde-jzRE@2x.webp",
+            "spiel/boden/erde-FO4Fdw@2x.png",
+            "spiel/boden/erde-e-Ei.webp"
+          ],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "spiel/boden/steine.png",
+            "spiel/boden/steine",
+            "steine.png",
+            "steine"
+          ],
+          "src": [
+            "spiel/boden/steine-u1IwEw@2x.webp",
+            "spiel/boden/steine-P_rr.webp",
+            "spiel/boden/steine-KE-6bA.png",
+            "spiel/boden/steine-a-hT@2x.png"
+          ],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "spiel/boden/wiese.png",
+            "spiel/boden/wiese",
+            "wiese.png",
+            "wiese"
+          ],
+          "src": [
+            "spiel/boden/wiese-b4iooQ@2x.png",
+            "spiel/boden/wiese-9GT3mw@2x.webp",
+            "spiel/boden/wiese-1ZKqkA.png",
+            "spiel/boden/wiese-0PfjMg.webp"
+          ],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "spiel/boden_deko",
+            "boden_deko"
+          ],
+          "src": [
+            "spiel/boden_deko-NMc2DQ@2x.png.json",
+            "spiel/boden_deko-gmWkkg.webp.json",
+            "spiel/boden_deko-7QTRDA.png.json",
+            "spiel/boden_deko-2yzU0g@2x.webp.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true,
+              "tps": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "spiel/felder",
+            "felder"
+          ],
+          "src": [
+            "spiel/felder-LXZTWg@2x.png.json",
+            "spiel/felder-fPOATA.webp.json",
+            "spiel/felder-58G0cg@2x.webp.json",
+            "spiel/felder--kl26g.png.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true,
+              "tps": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "spiel/objekte",
+            "objekte"
+          ],
+          "src": [
+            "spiel/objekte-yv2sMA-0@2x.png.json",
+            "spiel/objekte-JxBMJQ-0.png.json",
+            "spiel/objekte-EqEY-0.webp.json",
+            "spiel/objekte-bjy2XA-0@2x.webp.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true,
+              "tps": true
+            }
+          }
+        },
+        {
+          "alias": [
+            "spiel/schatten",
+            "schatten"
+          ],
+          "src": [
+            "spiel/schatten-X0KC.webp.json",
+            "spiel/schatten-WpP5mQ.png.json",
+            "spiel/schatten-PfbtwQ@2x.webp.json",
+            "spiel/schatten-cur7eg@2x.png.json"
+          ],
+          "data": {
+            "tags": {
+              "m": true,
+              "tps": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

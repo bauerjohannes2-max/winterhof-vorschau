@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#16294a" />
+  <title>Winterhof</title>
+  <link rel="icon" type="image/png" href="./assets/icon-180-QXbzIHRw.png" />
+  <style>
+    :root {
+      /* Grundfarbe = Mittelwert des Ladebild-Motivs, beim Bauen aus dem Motiv berechnet (vite.config.js) */
+      --grundfarbe: #997d6a;
+      --nacht: #16294a;
+      --gold: #ffd76a;
+      --gruen: #7fd35a;
+      --schrift: ui-rounded, "SF Pro Rounded", "Nunito", "Arial Rounded MT Bold", system-ui, sans-serif;
+    }
+    html, body { margin: 0; height: 100%; background: #dfe9f3; overflow: hidden; overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    #neu-root { position: fixed; inset: 0; }
+    #neu-root canvas { display: block; }
+
+    /* Ladebild (Baustein 3): Motiv, Schriftzug oben, Tipp + Balken unten im Daumenbereich.
+       Wie Hay Day/Clash erscheint es als EIN fertiges Bild: Motiv, Schriftzug, Tipp und Balken werden erst gemeinsam
+       eingeblendet, wenn das Motiv dekodiert ist (Startskript unten). Vorher steht ab dem ersten Bild eine weiche
+       Mini-Vorschau des Motivs (rund 1 KB, beim Bauen ins HTML gesetzt) – nie eine leere Fläche, nie Text ohne Bild. */
+    #laden {
+      position: fixed; inset: 0; z-index: 10; overflow: hidden;
+      background: var(--grundfarbe);
+      font-family: var(--schrift); color: #fff;
+      transition: opacity 0.35s ease;
+    }
+    #laden.fertig { opacity: 0; pointer-events: none; }
+    #laden::before { /* Mini-Vorschau, beim Bauen schon weichgezeichnet: exakt dieselbe Lage wie das scharfe Motiv (kein Sprung) */
+      content: ""; position: absolute; inset: 0;
+      background: url("data:image/webp;base64,UklGRtwBAABXRUJQVlA4INABAACwDQCdASpAADAAPtFYoUyoJSMiMBVcAQAaCWwAnTMl+1yMbR18YtcKHcDMyza8DtTVgo2BUnGmw+XiJ90t8lGQ9KhGm+bhtSdTACHA85JYdT3Mvj5vt9K8eP7gBmZAUSXZYywAMJGVcieSrnkfO3jIBUN+IvjAAP6plO0+RJH5H+nE2Z9U3BhpxX/dyF+iXpok4sDEd8pCOo5xiqptCrnxmTO3gENStYac+KBxWBIWpd+Uy+njhLvSaBOCn/1tf+0+11eNgKIpUwmAVvS12CLNOG6OU0tU5fmsddK7BjVe5TvNBL6ejMH/JLl0Msz65DS4UiM8851IxGAiFVZzjEIlzxOIZikc5iIvKyddoTWiRLcG5Bu17iXqMbIA9wdH8k8lE7jVYoeLwFvu2lEGQDTQkc/shOPqD2eJPC1lQ9z0pNAwQVRVnI4y8tqpLm+iv7LPm7xspRtkdWYoyKwuAMIBu3qj9roWBV3MP8vWlWlN3n/EkUvk94IE2hPxorjgO2ktpdbgC1yUAKfVyv+SfUZKy5woUPNvPgE06N9aALkxyYszmXyf4TnCflKaqOxJ9foXbeR1NpUrGwDIMVSlNSqKcaOFX1pMHu7KcvCL+U4AAA==") center / cover no-repeat;
+    }
+    /* Scharfstellen wie ein Kamera-Fokus: 0,7 s, weich an- und auslaufend. will-change legt die Ebenen auf die Grafikkarte,
+       so läuft das Überblenden auch flüssig, während das Spiel-Skript im Hintergrund startet. */
+    #laden-bild, #laden-inhalt { position: absolute; inset: 0; opacity: 0; will-change: opacity; transition: opacity 0.7s cubic-bezier(0.45, 0, 0.55, 1); }
+    /* Motiv steht unsichtbar (1 %) schon bereit: so ist es fertig gezeichnet, bevor das Überblenden beginnt (sonst hakt das erste Bild) */
+    #laden-bild { opacity: 0.01; }
+    #laden.bereit #laden-bild, #laden.bereit #laden-inhalt { opacity: 1; }
+    #laden-bild { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+    #laden-bild.fehlt { display: none; }
+    #laden-inhalt {
+      display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+      padding: max(14px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      box-sizing: border-box;
+    }
+    #laden-inhalt::before { /* unten abdunkeln, damit Tipp und Balken auf jedem Motiv lesbar sind */
+      content: ""; position: absolute; inset: 55% 0 0 0; pointer-events: none;
+      background: linear-gradient(to bottom, rgba(10, 22, 44, 0), rgba(10, 22, 44, 0.78));
+    }
+    #laden-logo {
+      position: relative;
+      margin: 0; font-size: clamp(34px, 9vh, 64px); font-weight: 900; letter-spacing: 0.02em; line-height: 1;
+      color: #fff;
+      -webkit-text-stroke: 2px var(--nacht); paint-order: stroke fill;
+      text-shadow: 0 4px 0 var(--nacht), 0 8px 18px rgba(0, 0, 0, 0.35);
+    }
+    #laden-unten { position: relative; z-index: 1; width: min(560px, 82vw); text-align: center; }
+    #laden-tipp {
+      margin: 0 0 10px; min-height: 2.6em; font-size: clamp(15px, 4.2vh, 18px); font-weight: 700; line-height: 1.3;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.45);
+    }
+    #laden-spur {
+      height: 18px; border-radius: 9px; overflow: hidden;
+      background: rgba(10, 22, 44, 0.75); border: 2px solid #fff; box-shadow: 0 3px 0 rgba(10, 22, 44, 0.6);
+    }
+    #laden-balken {
+      height: 100%; transform-origin: left center; transform: scaleX(0); transition: transform 0.2s ease-out;
+      background: linear-gradient(to bottom, #a8ec7d, var(--gruen) 55%, #4fae35);
+    }
+
+    /* Nur Querformat: hochkant zeigt sofort den Hinweis, das Spiel pausiert (ui/orientation.ts) */
+    #hochkant {
+      position: fixed; inset: 0; z-index: 20; display: none;
+      flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+      background: var(--nacht); color: #fff; font-family: var(--schrift); text-align: center; padding: 24px; box-sizing: border-box;
+    }
+    #hochkant p { margin: 0; font-size: 20px; font-weight: 800; line-height: 1.35; }
+    #hochkant-handy {
+      width: 54px; height: 92px; border: 5px solid #fff; border-radius: 12px; position: relative;
+      animation: drehen 2.4s ease-in-out infinite;
+    }
+    #hochkant-handy::after { content: ""; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 4px; margin-left: -7px; border-radius: 2px; background: #fff; }
+    @keyframes drehen { 0%, 25% { transform: rotate(0deg); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+    @media (prefers-reduced-motion: reduce) { #hochkant-handy { animation: none; transform: rotate(-90deg); } #laden, #laden-bild, #laden-inhalt, #laden-balken { transition: none; } }
+    @media (orientation: portrait) { #hochkant { display: flex; } }
+
+    /* Feld-Werkzeug (Baustein 9, Hay-Day-Sichel / Saat-Leiste / Wachstums-Info) */
+    #feld-werkzeug {
+      position: fixed; z-index: 5; pointer-events: none;
+      font-family: var(--schrift); color: #fff;
+      transition: opacity 0.14s ease, transform 0.14s ease;
+    }
+    #feld-werkzeug[hidden] { display: none; }
+    #feld-werkzeug.ziehen { opacity: 0.15; }
+    .fw-karte {
+      pointer-events: auto; display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 18px;
+      background: linear-gradient(to bottom, rgba(28, 49, 84, 0.95), rgba(16, 33, 60, 0.96));
+      border: 2px solid rgba(255, 224, 140, 0.72);
+      box-shadow: 0 8px 22px rgba(10, 20, 38, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      max-width: min(460px, calc(100vw - 24px)); overflow-x: auto; scrollbar-width: none;
+      touch-action: none;
+    }
+    .fw-karte::-webkit-scrollbar { display: none; }
+    .fw-btn {
+      position: relative; flex: 0 0 auto; min-width: 56px; min-height: 56px;
+      padding: 6px 10px; border-radius: 14px; border: 2px solid rgba(255, 255, 255, 0.24);
+      background: linear-gradient(to bottom, rgba(54, 86, 134, 0.92), rgba(33, 57, 94, 0.95));
+      color: #fff; font: inherit; cursor: pointer; touch-action: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      box-shadow: 0 3px 0 rgba(10, 20, 38, 0.55);
+      transition: transform 0.1s ease;
+    }
+    .fw-btn:active { transform: scale(0.95); }
+    .fw-btn[data-tool="sichel"] {
+      flex-direction: row; gap: 8px; padding: 8px 14px;
+      background: linear-gradient(to bottom, #ffd86f, #e5a324);
+      border-color: #fff3c4; color: #3a1f05; font-weight: 900;
+    }
+    .fw-btn.knapp { opacity: 0.62; }
+    .fw-name { font-size: 11px; font-weight: 800; line-height: 1.1; white-space: nowrap; }
+    .fw-meta { font-size: 10px; font-weight: 700; opacity: 0.9; white-space: nowrap; }
+    .fw-badge {
+      position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px;
+      border-radius: 10px; background: #ffd76a; color: #2b1803; font-size: 11px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center; border: 1.5px solid #16294a;
+      box-sizing: border-box;
+    }
+    .fw-badge.preis { background: #ffe48f; }
+    .fw-info {
+      pointer-events: auto; min-width: 158px; padding: 10px 14px; border-radius: 16px;
+      background: linear-gradient(to bottom, rgba(28, 49, 84, 0.95), rgba(16, 33, 60, 0.96));
+      border: 2px solid rgba(255, 224, 140, 0.65);
+      box-shadow: 0 8px 20px rgba(10, 20, 38, 0.42);
+    }
+    .fw-info-kopf { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; font-weight: 800; margin-bottom: 6px; }
+    .fw-balken-spur { height: 10px; border-radius: 5px; background: rgba(10, 20, 38, 0.72); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.25); }
+    .fw-balken { height: 100%; background: linear-gradient(to right, #84db5c, #ffd76a); transition: width 0.25s linear; }
+    #feld-zieher {
+      position: fixed; z-index: 6; pointer-events: none; width: 52px; height: 52px;
+      margin: -26px 0 0 -26px; display: none; align-items: center; justify-content: center;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+      transition: transform 0.08s ease-out;
+    }
+    #feld-zieher.aktiv { display: flex; }
+    #feld-zieher.schwung { transform: rotate(-28deg) scale(1.18); }
+  </style>
+  <script type="module" crossorigin src="./assets/index-ClYPJXoH.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/pixi-BNRsG_zB.js">
+</head>
+<body>
+  <div id="neu-root"></div>
+  <div id="laden" role="progressbar" aria-label="Winterhof lädt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <!-- Motiv als Bild im HTML (früh entdeckt, höchste Priorität; web.dev „Fetch Priority“). Platzhalter bis zur Grafik-Runde. -->
+    <img id="laden-bild" src="./assets/splash_art-0qQAFjCY.webp" alt="" fetchpriority="high" decoding="async" />
+    <div id="laden-inhalt">
+      <h1 id="laden-logo">Winterhof</h1>
+      <div id="laden-unten">
+        <p id="laden-tipp"></p>
+        <div id="laden-spur"><div id="laden-balken"></div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Tipps aus winterhof.json → loadingTips, beim Bauen eingesetzt (vite.config.js), damit der Tipp schon beim Einblenden steht -->
+  <script type="application/json" id="laden-tipps">["Wische über reife Felder, dann erntest du alles in einem Zug.","Wunschzettel bringen Münzen oder Erfahrung. Nimm, was du gerade brauchst.","Hängt ein Wunschzettel fest? Wirf ihn weg, bald kommt ein neuer.","Hindernisse räumen gibt Erfahrung und manchmal ein Fundstück.","Tannen musst du nicht fällen: Grab sie aus und setz sie woanders wieder ein.","Deine Tiere fressen Weizen oder Beeren. Halte immer etwas Futter im Silo.","Grundbrief, Holzhammer und Grenzpflock findest du beim Ernten und Abholen.","Die Tagestruhe am Hofplatz hat jeden Tag ein Geschenk für dich.","Volle Scheune? Im Hofladen bekommst du mehr als beim Händler.","Ab Stufe 13 kannst du ans Ufer des Sternsees."]</script>
+  <script>
+    // Ladebild zeigen, sobald das Motiv dekodiert ist: alles erscheint gemeinsam, nie Text vor dem Bild.
+    // Klassisches Inline-Skript, läuft sofort (vor dem Spiel-Skript). Fällt das Motiv aus: nach Fehler bzw. 4 s auf der Grundfarbe.
+    (function () {
+      var laden = document.getElementById('laden');
+      var bild = document.getElementById('laden-bild');
+      var tipp = document.getElementById('laden-tipp');
+      var tipps = [];
+      try { tipps = JSON.parse(document.getElementById('laden-tipps').textContent || '[]'); } catch (e) { tipps = []; }
+      if (tipps.length) {
+        var i = 0;
+        try {   // jeder Start zeigt den nächsten Tipp
+          var n = Number(localStorage.getItem('winterhof_tipp') || '0');
+          i = Number.isInteger(n) && n >= 0 ? n % tipps.length : 0;
+          localStorage.setItem('winterhof_tipp', String(i + 1));
+        } catch (e) { i = 0; }
+        tipp.textContent = tipps[i];
+        laden.dataset.tipp = String(i);
+      }
+      var gezeigt = false;
+      function zeigen() {
+        if (gezeigt) return;
+        gezeigt = true;
+        // zwei Bilder abwarten: das dekodierte Motiv wird erst (unsichtbar) gezeichnet, dann beginnt das Überblenden ohne Haken
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            laden.dataset.seit = String(Math.round(performance.now()));
+            laden.classList.add('bereit');
+            var balken = document.getElementById('laden-balken');   // erste Etappe (Motiv) geschafft
+            if (balken && !balken.style.transform) balken.style.transform = 'scaleX(0.1)';
+          });
+        });
+      }
+      function ohneBild() { bild.classList.add('fehlt'); zeigen(); }
+      if (bild.decode) bild.decode().then(zeigen, ohneBild);
+      else if (bild.complete) zeigen();
+      else { bild.addEventListener('load', zeigen); bild.addEventListener('error', ohneBild); }
+      setTimeout(zeigen, 4000);
+    })();
+  </script>
+  <div id="hochkant" role="alert">
+    <div id="hochkant-handy" aria-hidden="true"></div>
+    <p>Bitte halte dein Handy quer.</p>
+  </div>
+</body>
+</html>

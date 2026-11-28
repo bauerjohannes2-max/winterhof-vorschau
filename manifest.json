@@ -1,0 +1,23 @@
+{
+  "name": "Winterhof – Euer Weihnachts-Dorf",
+  "short_name": "Winterhof",
+  "description": "Ein gemütliches Weihnachts-Farmspiel im handgemalten Hay-Day-Stil mit Plätzchenbäckerei, Wintertieren und Rentierschlitten.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#162854",
+  "theme_color": "#B91C1C",
+  "icons": [
+    {
+      "src": "./assets/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
